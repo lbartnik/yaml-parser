@@ -3,6 +3,6 @@
 
 namespace parser {
 
-TEST(ParserTest, test) {}
+TEST(TokenizerTest, test) {}
 
 } // namespace parser

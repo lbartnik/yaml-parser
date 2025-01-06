@@ -1,11 +1,15 @@
+#pragma once
+
 #include <filesystem>
 #include <fstream>
+#include <list>
+#include <optional>
 #include <string>
 #include <string_view>
 
 namespace parser {
 
-enum class TokenType { END, WORD, NUMBER, COLON, DASH, COMMENT, SPACE };
+enum class TokenType { END, TEXT, NUMBER, COLON, DASH, COMMENT, INDENT, NEW_LINE };
 
 struct Token {
     TokenType type;
@@ -13,9 +17,52 @@ struct Token {
     std::string value;
 };
 
-class Tokenizer {
+inline Token indent(std::string value) {
+    return Token{.type = TokenType::INDENT, .value = std::move(value)};
+}
+
+inline Token text(std::string value) {
+    return Token{.type = TokenType::TEXT, .value = std::move(value)};
+}
+
+inline Token colon() {
+    return Token{.type = TokenType::COLON, .value = ":"};
+}
+
+inline Token newLine() {
+    return Token{.type = TokenType::NEW_LINE, .value = "\n"};
+}
+
+
+struct ListTokenizer {
+
+    ListTokenizer(std::list<Token> tokens) : mTokens(std::move(tokens)), mCurrentToken(mTokens.begin()) {}
+
+    std::optional<const Token&> next() {
+        if (mCurrentToken == mTokens.end()) {
+            return std::nullopt;
+        }
+        return *mCurrentToken++;
+    }
+
+    std::optional<const Token&> peek() {
+        if (mCurrentToken == mTokens.end()) {
+            return std::nullopt;
+        }
+        return *mCurrentToken;
+    }
+
+    std::list<Token> mTokens;
+    std::list<Token>::iterator mCurrentToken;
+};
+
+
+
+
+
+class StreamTokenizer {
   public:
-    Tokenizer(const std::filesystem::path &path) : mInput(path) {}
+    StreamTokenizer(const std::filesystem::path &path) : mInput(path) {}
 
     Token next() {
         // consume the next token
@@ -41,7 +88,7 @@ class Tokenizer {
 
             if (std::isalnum(c)) {
                 mInput.unget();
-                return nextWord();
+                return nextText();
             }
         }
 
@@ -50,7 +97,7 @@ class Tokenizer {
 
   private:
     Token nextSpace() {
-        Token token{.type = TokenType::SPACE, .start = mIndex};
+        Token token{.type = TokenType::INDENT, .start = mIndex};
         do {
             int c = mInput.get();
             if (!std::isspace(c)) {
@@ -88,8 +135,8 @@ class Tokenizer {
         return token;
     }
 
-    Token nextWord() {
-        Token token{.type = TokenType::WORD, .start = mIndex};
+    Token nextText() {
+        Token token{.type = TokenType::TEXT, .start = mIndex};
         int c;
 
         while (!std::isspace(c = mInput.get())) {

@@ -13,11 +13,13 @@ add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
 find_package(GTest REQUIRED)
 
 add_library(parser-lib SHARED
+    src/ast.cc
     src/tokenizer.cc
 )
 
 
 add_executable(parser-test
+    test/test_parser.cc
     test/test_tokenizer.cc)
 
 target_include_directories(parser-test
